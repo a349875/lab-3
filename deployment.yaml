@@ -1,0 +1,85 @@
+# create ingress to let you have xip.io url for simple test
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: demo-rancher-pipeline
+  namespace: demo-rancher-pipeline
+
+spec:
+  rules:
+  - host: xip.io
+    http:
+      paths:
+      - backend:
+          serviceName: ingress-demo-rancher-pipeline
+          servicePort: 80
+
+
+---
+# this service is for ingress to access the app (it point to workload)
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    field.cattle.io/targetWorkloadIds: '["deployment:demo-rancher-pipeline:demo-rancher-pipeline"]'
+  labels:
+    cattle.io/creator: norman
+  name: ingress-demo-rancher-pipeline
+  namespace: demo-rancher-pipeline
+
+spec:
+  clusterIP: 
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  sessionAffinity: None
+  type: ClusterIP
+---
+# this service is for other app in same namespace to access (it point to workload)
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    field.cattle.io/ipAddresses: "null"
+    field.cattle.io/targetDnsRecordIds: "null"
+    field.cattle.io/targetWorkloadIds: '["deployment:demo-rancher-pipeline:demo-rancher-pipeline"]'
+  labels:
+    cattle.io/creator: norman
+  name: demo-rancher-pipeline
+  namespace: demo-rancher-pipeline
+spec:
+  clusterIP: None
+  ports:
+  - name: default
+    port: 42
+    protocol: TCP
+    targetPort: 80
+  sessionAffinity: None
+  type: ClusterIP
+---
+# the main App
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-rancher-pipeline
+  namespace: demo-rancher-pipeline
+  labels:
+    app: demo-rancher-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-rancher-pipeline
+  template:
+    metadata:
+      labels:
+        app: demo-rancher-pipeline
+    spec:
+      imagePullSecrets:
+      - name: docker-hub
+      containers:
+      - name: maven
+        image: myclau/demo-rancher-pipeline:latest
+        ports:
+        - containerPort: 80
