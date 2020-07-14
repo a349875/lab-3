@@ -80,6 +80,6 @@ spec:
       - name: docker-hub
       containers:
       - name: maven
-        image: myclau/demo-rancher-pipeline:latest
+        image: a349875/awslab:latest
         ports:
         - containerPort: 80
